@@ -1,4 +1,14 @@
-# Logs
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environments
+.venv/
+venv/
+backend/venv/
+#logs
 logs
 *.log
 npm-debug.log*
