@@ -8,3 +8,5 @@ class Config:
 
     OTM_USERNAME = "INTL.INT01"
     OTM_PASSWORD = "changeme"
+    JWT_SECRET = "intelizz-secret-key"
+
