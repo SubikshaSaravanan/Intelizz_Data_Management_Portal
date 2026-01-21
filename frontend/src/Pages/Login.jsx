@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import logo from "../assets/intelizz-logo.png";
+import logo from "../assets/intel-8.png";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -35,8 +35,8 @@ export default function Login() {
 
         {/* Left Panel */}
         <div className="bg-gradient-to-br from-indigo-600 to-blue-700 p-10 text-white flex flex-col justify-center">
-          <img src={logo} className="w-40 mb-6" />
-          <h2 className="text-3xl font-bold">INTELIZZ</h2>
+          <img src={logo} className="h-14 w-auto" />
+          {/*<h2 className="text-3xl font-bold">INTELIZZ</h2>*/}
           <p className="mt-4 text-blue-200">
             Secure enterprise portal for Oracle Transportation Management
           </p>

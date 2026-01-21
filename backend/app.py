@@ -4,6 +4,8 @@ from database import db, migrate
 from config import Config
 from routes import bp
 from auth import auth_bp
+from invoice_config_routes import invoice_config_bp
+
 
 def create_app():
     app = Flask(__name__)
@@ -19,7 +21,7 @@ def create_app():
     # Register Blueprints
     app.register_blueprint(bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
-
+    app.register_blueprint(invoice_config_bp)
     return app
 
 

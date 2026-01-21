@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Pages/Login";
 import Landing from "./Pages/Landing";
 import Invoice from "./Pages/Invoice";
+import Items from "./Pages/items";
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
 import { useState, useEffect } from "react";
@@ -55,6 +56,16 @@ export default function App() {
             </PrivateRoute>
           }
         />
+        {/* Items*/}
+        <Route
+  path="/items"
+  element={
+    <PrivateRoute>
+      <Items />
+    </PrivateRoute>
+  }
+/>
+
 
       </Routes>
     </BrowserRouter>

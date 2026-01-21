@@ -1,4 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
+import logo from "../assets/intel-8.png";
+
 import {
   Home,
   FileText,
@@ -9,6 +11,7 @@ import {
   ClipboardList,
   Clock,
   Settings,
+  Package,
   LogOut
 } from "lucide-react";
 
@@ -23,40 +26,59 @@ export default function Navbar() {
   };
 
   const menus = [
-    { name: "Dashboard", path: "/dashboard", icon: <Home size={18}/> },
-    { name: "Invoices", path: "/invoice", icon: <FileText size={18}/> },
-    { name: "Shipment", path: "#", icon: <Truck size={18}/> },
-    { name: "Vendors", path: "#", icon: <Users size={18}/> },
-    { name: "Location", path: "#", icon: <MapPin size={18}/> },
-    { name: "Tracking", path: "#", icon: <Activity size={18}/> },
-    { name: "Orders", path: "#", icon: <ClipboardList size={18}/> },
-    { name: "Audit", path: "#", icon: <Clock size={18}/> },
-    { name: "Settings", path: "#", icon: <Settings size={18}/> }
+    { name: "Dashboard", path: "/dashboard", icon: <Home size={18} /> },
+    { name: "Invoices", path: "/invoice", icon: <FileText size={18} /> },
+    { name: "Shipment", path: "/shipment", icon: <Truck size={18} /> },
+    { name: "Vendors", path: "/vendors", icon: <Users size={18} /> },
+    { name: "Location", path: "/location", icon: <MapPin size={18} /> },
+    { name: "Tracking", path: "/tracking", icon: <Activity size={18} /> },
+    { name: "Orders", path: "/orders", icon: <ClipboardList size={18} /> },
+    { name: "Audit", path: "/audit", icon: <Clock size={18} /> },
+    { name: "Items", path: "/items", icon: <Package size={18} /> },
+    { name: "Settings", path: "/settings", icon: <Settings size={18} /> }
   ];
 
   return (
     <div className="bg-indigo-900 text-white flex justify-between px-6 py-3 shadow-lg">
 
-      {/* Left side menus */}
-      <div className="flex gap-6 items-center">
-        {menus.map(m => (
-          <Link
-            key={m.name}
-            to={m.path}
-            className="flex items-center gap-2 text-sm hover:text-indigo-300 transition"
-          >
-            {m.icon}
-            {m.name}
-          </Link>
-        ))}
+      {/* LEFT SIDE */}
+      <div className="flex items-center gap-8">
+
+        {/* ✅ LOGO — STATIC ON ALL PAGES */}
+        <Link to="/dashboard" className="flex items-center gap-3">
+          <img
+            src={logo}
+            alt="Intelizz"
+            className="h-12 w-auto object-contain"
+          />
+          {/*<span className="text-lg font-bold tracking-wide">
+            INTELIZZ
+          </span>*/}
+        </Link>
+
+        {/* MENUS */}
+        <div className="flex gap-6 items-center">
+          {menus.map(menu => (
+            <Link
+              key={menu.name}
+              to={menu.path}
+              className="flex items-center gap-2 text-sm hover:text-indigo-300 transition"
+            >
+              {menu.icon}
+              {menu.name}
+            </Link>
+          ))}
+        </div>
+
       </div>
 
-      {/* Right side logout */}
+      {/* LOGOUT */}
       <button
         onClick={logout}
         className="flex items-center gap-2 bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded text-sm"
       >
-        <LogOut size={16}/> Logout
+        <LogOut size={16} />
+        Logout
       </button>
 
     </div>
