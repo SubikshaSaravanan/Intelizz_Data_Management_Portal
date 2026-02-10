@@ -1,0 +1,29 @@
+{
+  "header": [
+    { "key": "invoiceXid", "label": "Invoice ID", "mandatory": true },
+    { "key": "invoiceNumber", "label": "Invoice Number", "mandatory": true },
+    { "key": "invoiceDate", "label": "Invoice Date", "mandatory": true },
+    { "key": "currencyGid", "label": "Currency", "mandatory": true },
+    { "key": "servprovAliasQualGid", "label": "Service Provider Alias Qualifier", "mandatory": true },
+    { "key": "servprovAliasValue", "label": "Service Provider Alias", "mandatory": true },
+    { "key": "invoiceType", "label": "Financial Consolidation Type" },
+    { "key": "paymentMethod", "label": "Payment Method" },
+    { "key": "incoterm", "label": "Incoterm" },
+    { "key": "dueDate", "label": "Due Date" },
+    { "key": "glDate", "label": "GL Date" }
+  ],
+
+  "referenceNumbers": [
+    { "key": "refnumQual", "label": "Reference Number Qualifier", "mandatory": true },
+    { "key": "refnumValue", "label": "Reference Number", "mandatory": true },
+    { "key": "issueDate", "label": "Issue Date" }
+  ],
+
+  "lineItems": [
+    { "key": "lineitemSeqNo", "label": "Line Item Sequence", "mandatory": true },
+    { "key": "costTypeGid", "label": "Cost Type", "mandatory": true },
+    { "key": "description", "label": "Description" },
+    { "key": "freightCharge", "label": "Freight Charge", "mandatory": true },
+    { "key": "accessorialCode", "label": "Accessorial Code" }
+  ]
+}

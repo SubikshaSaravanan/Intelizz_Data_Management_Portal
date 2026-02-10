@@ -1,0 +1,13 @@
+static: /static/<path:filename>
+api.upload_invoice: /api/invoice/upload
+api.invoices: /api/invoices
+api.refresh: /api/refresh/<int:id>
+api.resend_invoice: /api/invoice/resend/<int:id>
+api.view_xml: /api/xml/<int:id>
+api.view_json: /api/json/<int:id>
+api.delete_invoice: /api/delete/<int:id>
+api.upload_raw_json: /api/invoice/json/upload
+api.invoice_template_bp.get_invoice_template_fields: /api/invoice-template/fields
+api.invoice_template_bp.get_otm_invoice_metadata: /api/invoice-template/otm-metadata
+api.invoice_template_bp.generate_invoice_template: /api/invoice-template/generate
+auth.login: /api/auth/login

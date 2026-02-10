@@ -1,80 +1,141 @@
 from flask import Blueprint, request, jsonify
 import pandas as pd
+import json
 
-from models import Invoice
 from database import db
+from models import Invoice
+
 from xml_builder import build_invoice_xml
+from json_builder import build_invoice_json_from_excel
+
+
 from otm_service import (
     post_to_otm,
     get_otm_status,
     get_transmission_error_report
 )
 
+from otm_rest_service import post_excel_json_invoice_to_otm
+from invoice_template_routes import invoice_template_bp
+
 bp = Blueprint("api", __name__)
 
+# ✅ ADD THIS LINE
+bp.register_blueprint(invoice_template_bp)
+
+
+
+
 
 # ============================================================
-# UPLOAD EXCEL  ✅ FIXED
+# UPLOAD EXCEL → XML OR JSON → SEND TO OTM
 # ============================================================
-@bp.route("/upload", methods=["POST"])
-def upload():
+@bp.route("/invoice/upload", methods=["POST"])
+def upload_invoice():
 
-    df = pd.read_excel(request.files["file"])
-    result = []
+    file = request.files.get("file")
+    process_type = request.form.get("processType")  # xml | json
 
-    for inv_xid, rows in df.groupby("INVOICE_XID"):
+    if not file or not process_type:
+        return {"error": "File or processType missing"}, 400
 
-        invoice_num = rows.iloc[0]["INVOICE_NUM"]
+    try:
+        # ==========================
+        # XML FLOW (MULTI-INVOICE)
+        # ==========================
+        if process_type == "xml":
+            df = pd.read_excel(file)
 
-        old = Invoice.query.filter_by(invoice_xid=inv_xid).first()
-        if old:
-            db.session.delete(old)
+            grouped = df.groupby("INVOICE_XID")
+
+            results = []
+
+            for invoice_xid, invoice_df in grouped:
+
+                invoice_num = str(invoice_df.iloc[0]["INVOICE_NUM"])
+
+                xml_bytes, xml_string = build_invoice_xml(invoice_df)
+                response_xml, transmission_no = post_to_otm(xml_bytes)
+
+                invoice = Invoice(
+                    invoice_xid=invoice_xid,
+                    invoice_num=invoice_num,
+                    transmission_no=transmission_no,
+                    status="RECEIVED",
+
+                    request_xml=xml_string,
+                    request_json=None,
+
+                    response_xml=response_xml,
+                    error_message=None,
+
+                    source_type="XML"
+                )
+
+                db.session.add(invoice)
+
+                results.append({
+                    "invoiceXid": invoice_xid,
+                    "invoiceNumber": invoice_num,
+                    "transmission_no": transmission_no
+                })
+
             db.session.commit()
 
-        xml_bytes, xml_string = build_invoice_xml(rows)
+            return jsonify({
+                "message": "Invoices created using XML",
+                "count": len(results),
+                "invoices": results
+            })
 
-        response_xml, transmission_no = post_to_otm(xml_bytes)
+        # ==========================
+        # JSON FLOW
+        # ==========================
+        elif process_type == "json":
+            json_payload = build_invoice_json_from_excel(file)
+            otm_response = post_excel_json_invoice_to_otm(json_payload)
 
-        status = get_otm_status(transmission_no)
+            invoice = Invoice(
+                invoice_xid=json_payload["invoiceXid"],
+                invoice_num=json_payload["invoiceNumber"],
+                transmission_no=(
+                    otm_response.get("transmissionNo")
+                    or otm_response.get("id")
+                ),
+                status="RECEIVED",
 
-        # ✅ FETCH ERROR IMMEDIATELY
-        error_message = None
-        if status == "ERROR":
-            error_message = get_transmission_error_report(
-                transmission_no
+                request_xml=None,
+                request_json=json_payload,
+
+                response_xml=json.dumps(otm_response),
+                error_message=None,
+
+                source_type="JSON"
             )
 
-        inv = Invoice(
-            invoice_xid=inv_xid,
-            invoice_num=invoice_num,
-            transmission_no=transmission_no,
-            status=status,
-            request_xml=xml_string,
-            response_xml=response_xml,
-            error_message=error_message
-        )
+            db.session.add(invoice)
+            db.session.commit()
 
-        db.session.add(inv)
-        db.session.commit()
+            return jsonify({
+                "message": "Invoice created using JSON",
+                "invoiceXid": invoice.invoice_xid,
+                "invoiceNumber": invoice.invoice_num,
+                "transmission_no": invoice.transmission_no
+            })
 
-        result.append({
-            "invoice_xid": inv_xid,
-            "invoice_num": invoice_num,
-            "transmission_no": transmission_no,
-            "status": status,
-            "error_message": error_message
-        })
+        return {"error": "Invalid processType"}, 400
 
-    return jsonify(result)
+    except Exception as e:
+        return {"error": str(e)}, 500
 
 
 # ============================================================
-# FETCH INVOICES
+# FETCH ALL INVOICES
 # ============================================================
-@bp.route("/invoices")
+@bp.route("/invoices", methods=["GET"])
 def invoices():
 
-    data = Invoice.query.order_by(
+    invoices = Invoice.query.order_by(
         Invoice.created_at.desc()
     ).all()
 
@@ -85,35 +146,41 @@ def invoices():
             "invoice_num": i.invoice_num,
             "transmission_no": i.transmission_no,
             "status": i.status,
-            "error_message": i.error_message
+            "error_message": i.error_message,
+
+            "has_json": bool(i.request_json),
+            "has_xml": bool(i.request_xml),
+
+            "source_type": i.source_type
         }
-        for i in data
+        for i in invoices
     ])
 
 
 # ============================================================
-# REFRESH STATUS + ERROR
+# REFRESH STATUS (XML ONLY)
 # ============================================================
 @bp.route("/refresh/<int:id>", methods=["POST"])
 def refresh(id):
 
-    inv = Invoice.query.get(id)
+    inv = Invoice.query.get_or_404(id)
 
-    if not inv or not inv.transmission_no:
-        return jsonify({"status": "NO_TRANSMISSION"})
+    if not inv.transmission_no:
+        return jsonify({"status": inv.status})
+
+    if inv.source_type == "JSON":
+        return jsonify({
+            "status": inv.status,
+            "error_message": inv.error_message
+        })
 
     status = get_otm_status(inv.transmission_no)
     inv.status = status
 
     if status == "ERROR":
-
-        error = get_transmission_error_report(
+        inv.error_message = get_transmission_error_report(
             inv.transmission_no
         )
-
-        # store only if available
-        if error and error.strip():
-            inv.error_message = error
 
     db.session.commit()
 
@@ -124,30 +191,133 @@ def refresh(id):
 
 
 # ============================================================
+# 🔁 RESEND INVOICE (XML + JSON)
+# ============================================================
+@bp.route("/invoice/resend/<int:id>", methods=["POST"])
+def resend_invoice(id):
+
+    inv = Invoice.query.get_or_404(id)
+
+    try:
+        if inv.source_type == "XML" and inv.request_xml:
+            response_xml, transmission_no = post_to_otm(
+                inv.request_xml.encode("utf-8")
+            )
+            inv.transmission_no = transmission_no
+            inv.response_xml = response_xml
+
+        elif inv.source_type == "JSON" and inv.request_json:
+            otm_response = post_excel_json_invoice_to_otm(inv.request_json)
+            inv.transmission_no = (
+                otm_response.get("transmissionNo")
+                or otm_response.get("id")
+            )
+            inv.response_xml = json.dumps(otm_response)
+
+        inv.status = "RECEIVED"
+        inv.error_message = None
+
+        db.session.commit()
+
+        return jsonify({
+            "message": "Invoice resent successfully",
+            "transmission_no": inv.transmission_no
+        })
+
+    except Exception as e:
+        inv.status = "ERROR"
+        inv.error_message = str(e)
+        db.session.commit()
+        return {"error": str(e)}, 500
+
+
+# ============================================================
 # VIEW XML
 # ============================================================
-@bp.route("/xml/<int:id>")
+@bp.route("/xml/<int:id>", methods=["GET"])
 def view_xml(id):
 
-    inv = Invoice.query.get(id)
+    inv = Invoice.query.get_or_404(id)
 
-    if not inv:
-        return "Invoice not found", 404
+    if not inv.request_xml:
+        return "XML not found", 404
 
     return inv.request_xml, 200, {
-        "Content-Type": "application/xml",
-        "Content-Disposition": "inline"
+        "Content-Type": "application/xml"
     }
 
 
 # ============================================================
-# DELETE
+# VIEW JSON
 # ============================================================
-@bp.route("/delete/<int:id>", methods=["DELETE"])
-def delete(id):
+@bp.route("/json/<int:id>", methods=["GET"])
+def view_json(id):
 
-    inv = Invoice.query.get(id)
+    inv = Invoice.query.get_or_404(id)
+
+    if not inv.request_json:
+        return "JSON not found", 404
+
+    return jsonify(inv.request_json)
+
+
+# ============================================================
+# DELETE INVOICE (FIXED FOR CORS)
+# ============================================================
+@bp.route("/delete/<int:id>", methods=["DELETE", "OPTIONS"])
+def delete_invoice(id):
+
+    if request.method == "OPTIONS":
+        return "", 200
+
+    inv = Invoice.query.get_or_404(id)
     db.session.delete(inv)
     db.session.commit()
 
-    return {"status": "deleted"}
+    return jsonify({"message": "Invoice deleted"}), 200
+
+
+# ============================================================
+# UPLOAD RAW JSON FILE
+# ============================================================
+@bp.route("/invoice/json/upload", methods=["POST"])
+def upload_raw_json():
+
+    file = request.files.get("file")
+    if not file:
+        return {"error": "JSON file missing"}, 400
+
+    try:
+        payload = json.load(file)
+        otm_response = post_excel_json_invoice_to_otm(payload)
+
+        invoice = Invoice(
+            invoice_xid=payload.get("invoiceXid", "JSON_UPLOAD"),
+            invoice_num=payload.get("invoiceNumber", "JSON_UPLOAD"),
+            transmission_no=(
+                otm_response.get("transmissionNo")
+                or otm_response.get("id")
+            ),
+            status="RECEIVED",
+
+            request_json=payload,
+            request_xml=None,
+
+            response_xml=json.dumps(otm_response),
+            error_message=None,
+
+            source_type="JSON"
+        )
+
+        db.session.add(invoice)
+        db.session.commit()
+
+        return jsonify({
+            "message": "JSON invoice uploaded successfully",
+            "invoiceXid": invoice.invoice_xid,
+            "invoiceNumber": invoice.invoice_num,
+            "transmission_no": invoice.transmission_no
+        })
+
+    except Exception as e:
+        return {"error": str(e)}, 500
