@@ -1,0 +1,142 @@
+[
+  {
+    "id": "af386781-bf07-4c4c-9286-84825cc532ed",
+    "name": "StandardExcelTemplate",
+    "fields": [
+      {
+        "id": "baseCharge",
+        "name": "Base Charge",
+        "displayText": "Base  Charge",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": false
+      },
+      {
+        "id": "currencyGid",
+        "name": "Currency Gid",
+        "displayText": "Currency  Gid",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": false
+      },
+      {
+        "id": "dateReceived",
+        "name": "Date Received",
+        "displayText": "Date  Received",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": false
+      },
+      {
+        "id": "invoiceGid",
+        "name": "Invoice Gid",
+        "displayText": "Invoice  Gid",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "invoiceNumber",
+        "name": "Invoice Number",
+        "displayText": "Invoice  Number",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "invoiceXid",
+        "name": "Invoice Xid",
+        "displayText": "Invoice  Xid",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "lineItems",
+        "name": "Line Items",
+        "displayText": "Line  Items",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "servprovAliasQualGid",
+        "name": "Servprov Alias Qual Gid",
+        "displayText": "Servprov  Alias  Qual  Gid",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "servprovAliasValue",
+        "name": "Servprov Alias Value",
+        "displayText": "Servprov  Alias  Value",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "servprovGid",
+        "name": "Servprov Gid",
+        "displayText": "Servprov  Gid",
+        "defaultValue": "",
+        "display": true,
+        "mandatory": true
+      }
+    ]
+  },
+  {
+    "id": "9cf4b7eb-6859-4754-94e2-30957515837e",
+    "name": "OtmTemplate",
+    "fields": [
+      {
+        "id": "currencyGid",
+        "name": "Currency Gid",
+        "displayText": "Currency  Gid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "invoiceNumber",
+        "name": "Invoice Number",
+        "displayText": "Invoice  Number",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "invoiceXid",
+        "name": "Invoice Xid",
+        "displayText": "Invoice  Xid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "lineItems",
+        "name": "Line Items",
+        "displayText": "Line  Items",
+        "defaultValue": [
+          "1",
+          "2"
+        ],
+        "type": "array",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "servprovGid",
+        "name": "Servprov Gid",
+        "displayText": "Servprov  Gid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      }
+    ]
+  }
+]

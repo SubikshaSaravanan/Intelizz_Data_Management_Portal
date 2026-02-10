@@ -1,4 +1,7 @@
 from database import db
+import datetime
+from datetime import datetime
+
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
@@ -37,10 +40,13 @@ class Invoice(db.Model):
 
     error_message = db.Column(db.Text)
 
-    source_type = db.Column(db.String(20))  # XML | REST
+    # 🔥 THIS WILL DRIVE UI LOGIC
+    # Values:
+    #   "XML"  -> Excel → XML → OTM
+    #   "JSON" -> Excel → JSON → OTM OR Raw JSON Upload
+    source_type = db.Column(db.String(20))
 
     created_at = db.Column(db.DateTime, default=db.func.now())
-
 
 class InvoiceFieldConfig(db.Model):
     __tablename__ = "invoice_field_config"
@@ -54,3 +60,25 @@ class InvoiceFieldConfig(db.Model):
     disabled = db.Column(db.Boolean, default=False)
 
     data_type = db.Column(db.String(30))
+
+
+class InvoiceJson(db.Model):
+
+    __tablename__ = "invoice_json"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    invoice_xid = db.Column(db.String(100))
+    invoice_number = db.Column(db.String(100))
+    invoice_gid = db.Column(db.String(200))
+
+    request_json = db.Column(db.JSON)
+    response_json = db.Column(db.JSON)
+
+    status = db.Column(db.String(50))
+    error_message = db.Column(db.Text)
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
