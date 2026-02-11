@@ -10,7 +10,8 @@ import {
   ClipboardList,
   Activity,
   Sun,
-  Moon
+  Moon,
+  Settings
 } from "lucide-react";
 
 export default function Landing() {
@@ -58,7 +59,13 @@ export default function Landing() {
       title: "Items",
       icon: Package,
       color: "from-amber-600 to-orange-800",
-      path: "/items"
+      path: "/ItemCreate"
+    },
+    {
+      title: "Settings",
+      icon: Settings,
+      color: "from-slate-600 to-slate-800",
+      path: "/settings"
     }
   ];
 

@@ -4,14 +4,11 @@ import { useState, useEffect } from "react";
 import Login from "./Pages/Login";
 import Landing from "./Pages/Landing";
 import Invoice from "./Pages/Invoice";
-import InvoiceJson from "./Pages/InvoiceJson";
-import Items from "./Pages/items";
-import InvoiceTemplate from "./Pages/InvoiceTemplate"; // ✅ ADD THIS
-
+import Items from "./Pages/ItemCreate";
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
-
-
+import { useState, useEffect } from "react";
+import Setting from "./Pages/FieldConfigManager";      
 export default function App() {
 
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -78,13 +75,31 @@ export default function App() {
 
         {/* ================= ITEMS ================= */}
         <Route
-          path="/items"
-          element={
-            <PrivateRoute>
-              <Items />
-            </PrivateRoute>
-          }
-        />
+  path="/ItemCreate"
+  element={
+    <PrivateRoute>
+      <Items />
+    </PrivateRoute>
+  }
+/>
+ {/* Items*/}
+        <Route
+  path="/FieldConfigManager"
+  element={
+    <PrivateRoute>
+      <Setting />
+    </PrivateRoute>
+  }
+/>
+ {/* Settings*/}
+        <Route
+  path="/settings"
+  element={
+    <PrivateRoute>
+      <Setting />
+    </PrivateRoute>
+  }
+/>
 
         {/* ================= FALLBACK ================= */}
         <Route
