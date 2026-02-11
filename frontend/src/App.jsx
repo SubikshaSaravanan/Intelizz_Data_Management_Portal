@@ -2,11 +2,11 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./Pages/Login";
 import Landing from "./Pages/Landing";
 import Invoice from "./Pages/Invoice";
-import Items from "./Pages/items";
+import Items from "./Pages/ItemCreate";
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
 import { useState, useEffect } from "react";
-
+import Setting from "./Pages/FieldConfigManager";      
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("auth") === "true"
@@ -58,10 +58,28 @@ export default function App() {
         />
         {/* Items*/}
         <Route
-  path="/items"
+  path="/ItemCreate"
   element={
     <PrivateRoute>
       <Items />
+    </PrivateRoute>
+  }
+/>
+ {/* Items*/}
+        <Route
+  path="/FieldConfigManager"
+  element={
+    <PrivateRoute>
+      <Setting />
+    </PrivateRoute>
+  }
+/>
+ {/* Settings*/}
+        <Route
+  path="/settings"
+  element={
+    <PrivateRoute>
+      <Setting />
     </PrivateRoute>
   }
 />
