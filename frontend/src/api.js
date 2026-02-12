@@ -84,4 +84,15 @@ export const updateInvoiceInOTM = (id, payload) =>
 export const deleteInvoiceFromOTM = (id) =>
   api.delete(`/invoice/json/otm/${id}`);
 
+
+/* ======================================================
+   DASHBOARD & METADATA
+====================================================== */
+
+export const getDashboardModules = () =>
+  api.get("/dashboard/modules");
+
+export const syncMetadata = (objectName) =>
+  api.post(`/metadata/sync/${objectName}`);
+
 export default api;

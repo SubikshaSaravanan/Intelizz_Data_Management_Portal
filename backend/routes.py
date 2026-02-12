@@ -15,7 +15,8 @@ from otm_service import (
     get_transmission_error_report
 )
 
-from otm_rest_service import post_excel_json_invoice_to_otm
+from otm_rest_service import post_excel_json_invoice_to_otm, get_otm_metadata
+from models import Invoice, OtmObjectMetadata, MetadataField
 from invoice_template_routes import invoice_template_bp
 
 bp = Blueprint("api", __name__)
@@ -321,3 +322,98 @@ def upload_raw_json():
 
     except Exception as e:
         return {"error": str(e)}, 500
+# ============================================================
+# OTM CATALOG LOADING
+# ============================================================
+def load_otm_catalog():
+    import os
+    path = os.path.join(os.path.dirname(__file__), "otm_catalog.json")
+    if os.path.exists(path):
+        with open(path, "r") as f:
+            return json.load(f)
+    return {"MASTER": [], "TRANSACTION": [], "POWER": []}
+
+def get_classification_from_catalog(object_name):
+    catalog = load_otm_catalog()
+    for category, items in catalog.items():
+        if any(i['name'] == object_name for i in items):
+            return category
+    return "TRANSACTION"
+
+# ============================================================
+# SYNC OTM METADATA
+# ============================================================
+@bp.route("/metadata/sync/<object_name>", methods=["POST"])
+def sync_metadata(object_name):
+    status_code, data = get_otm_metadata(object_name)
+
+    if status_code != 200:
+        return jsonify(data), status_code
+
+    # Check classification from catalog
+    classification = get_classification_from_catalog(object_name)
+
+    # Update or create Header
+    metadata = OtmObjectMetadata.query.filter_by(object_name=object_name).first()
+    if not metadata:
+        metadata = OtmObjectMetadata(object_name=object_name, classification=classification)
+        db.session.add(metadata)
+    else:
+        metadata.classification = classification
+        metadata.last_synced = db.func.now()
+
+    # Clear existing fields
+    MetadataField.query.filter_by(metadata_id=metadata.id).delete()
+
+    # Add new fields from metadata-catalog
+    # The structure of OTM metadata-catalog Usually has "attributes" or "properties"
+    # We will simple extract top-level names for now
+    items = data.get("attributes", [])
+    for item in items:
+        field = MetadataField(
+            object_metadata=metadata,
+            field_name=item.get("name"),
+            data_type=item.get("type"),
+            is_required=not item.get("nullable", True)
+        )
+        db.session.add(field)
+
+    db.session.commit()
+
+    return jsonify({
+        "message": f"Metadata for {object_name} synced successfully",
+        "fields_count": len(items),
+        "classification": classification
+    })
+
+# ============================================================
+# DASHBOARD MODULES
+# ============================================================
+@bp.route("/dashboard/modules", methods=["GET"])
+def get_dashboard_modules():
+    catalog = load_otm_catalog()
+    otm_meta = {m.object_name: m for m in OtmObjectMetadata.query.all()}
+
+    modules = {
+        "MASTER": [],
+        "TRANSACTION": [],
+        "POWER": []
+    }
+
+    for category, items in catalog.items():
+        for item in items:
+            db_entry = otm_meta.get(item['name'])
+            
+            # Start with catalog data and add sync status
+            module = item.copy()
+            module.update({
+                "title": item.get('display', item['name']),
+                "path": item.get('path', f"/{item['name']}"),
+                "last_synced": db_entry.last_synced.isoformat() if db_entry and db_entry.last_synced else None,
+                "is_synced": bool(db_entry and db_entry.last_synced),
+                "is_app": item.get('is_app', False)
+            })
+            
+            modules[category].append(module)
+
+    return jsonify(modules)

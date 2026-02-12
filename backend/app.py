@@ -19,17 +19,8 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
-    # 1. Disable strict_slashes (Fixes the 308 Redirect/CORS loop)
-    app.url_map.strict_slashes = False
-
-    # 2. Relax CORS to allow common headers
-    CORS(app, resources={
-        r"/api/*": {
-            "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
-            "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"]
-        }
-    })
+    # Disable alphabetical sorting of JSON keys to preserve OTM field order
+    app.json.sort_keys = False
 
     # =============================
     # Enable CORS

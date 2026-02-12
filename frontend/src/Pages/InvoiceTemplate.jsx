@@ -137,40 +137,12 @@ export default function InvoiceTemplate() {
     }
   };
 
-  // Grouping Logic
+  // Grouping Logic (Simplified to preserve exact OTM sequential order)
   const getGroupedFields = (fieldList) => {
-    const groups = {};
-    fieldList.forEach(field => {
-      // Logic: Use the first word of the CamelCase ID as the group
-      // e.g. "ReleaseID" -> "Release", "PaymentMethod..." -> "Payment"
-      // Default to "General" if unclear
-      const match = field.id.match(/^[A-Z]?[a-z]+/);
-      let groupName = "General";
-
-      if (match) {
-        // Capitalize first letter
-        groupName = match[0].charAt(0).toUpperCase() + match[0].slice(1);
-      }
-
-      // Specific overrides for cleaner groups
-      if (field.id.startsWith("IncoTerm")) groupName = "Inco Terms";
-      if (field.id.startsWith("Service")) groupName = "Service Provider";
-      if (field.id.startsWith("Payment")) groupName = "Payment";
-      if (field.id.startsWith("Release")) groupName = "Release";
-
-      if (!groups[groupName]) groups[groupName] = [];
-      groups[groupName].push(field);
-    });
-
-    // Sort fields within groups (Mandatory first)
-    Object.keys(groups).forEach(key => {
-      groups[key].sort((a, b) => {
-        if (a.mandatory === b.mandatory) return a.name.localeCompare(b.name);
-        return a.mandatory ? -1 : 1;
-      });
-    });
-
-    return groups;
+    // We return a single group to maintain the exact 1, 2, 3... sequence from OTM
+    return {
+      "Invoice Fields": fieldList
+    };
   };
 
   const groupedFields = useMemo(() => getGroupedFields(fields.invoice), [fields.invoice]);
@@ -428,7 +400,7 @@ export default function InvoiceTemplate() {
               </div>
             </div>
 
-            {Object.keys(groupedFields).sort().map(groupName => (
+            {Object.keys(groupedFields).map(groupName => (
               <div key={groupName} className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                 {/* Group Header */}
                 <button

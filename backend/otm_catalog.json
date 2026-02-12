@@ -1,0 +1,135 @@
+{
+    "MASTER": [
+        {
+            "name": "locations",
+            "display": "Locations",
+            "icon": "MapPin"
+        },
+        {
+            "name": "regions",
+            "display": "Regions",
+            "icon": "Globe"
+        },
+        {
+            "name": "items",
+            "display": "Items",
+            "icon": "Package",
+            "is_app": true,
+            "path": "/items"
+        },
+        {
+            "name": "packagedItems",
+            "display": "Packaged Items",
+            "icon": "Box"
+        },
+        {
+            "name": "involvedParties",
+            "display": "Involved Parties",
+            "icon": "Users"
+        },
+        {
+            "name": "serviceProviders",
+            "display": "Service Providers",
+            "icon": "Truck"
+        },
+        {
+            "name": "equipmentGroups",
+            "display": "Equipment Groups",
+            "icon": "Layers"
+        },
+        {
+            "name": "commodities",
+            "display": "Commodities",
+            "icon": "Anchor"
+        }
+    ],
+    "TRANSACTION": [
+        {
+            "name": "invoices",
+            "display": "Invoices",
+            "icon": "FileText",
+            "is_app": true,
+            "path": "/invoice"
+        },
+        {
+            "name": "invoice_json",
+            "display": "JSON Invoice",
+            "icon": "FilePlus",
+            "is_app": true,
+            "path": "/invoice-json"
+        },
+        {
+            "name": "vouchers",
+            "display": "Vouchers",
+            "icon": "CreditCard"
+        },
+        {
+            "name": "buyShipments",
+            "display": "Buy Shipments",
+            "icon": "Truck"
+        },
+        {
+            "name": "sellShipments",
+            "display": "Sell Shipments",
+            "icon": "Truck"
+        },
+        {
+            "name": "orderReleases",
+            "display": "Order Releases",
+            "icon": "ClipboardList"
+        },
+        {
+            "name": "trackingEvents",
+            "display": "Tracking Events",
+            "icon": "Activity"
+        },
+        {
+            "name": "bills",
+            "display": "Bills",
+            "icon": "FilePlus"
+        }
+    ],
+    "POWER": [
+        {
+            "name": "parameters",
+            "display": "Parameters",
+            "icon": "Sliders"
+        },
+        {
+            "name": "userPreferences",
+            "display": "User Preferences",
+            "icon": "UserCog"
+        },
+        {
+            "name": "statusTypes",
+            "display": "Status Types",
+            "icon": "CheckSquare"
+        },
+        {
+            "name": "unitOfMeasure",
+            "display": "Unit of Measure",
+            "icon": "Ruler"
+        },
+        {
+            "name": "invoiceTemplates",
+            "display": "Invoice Templates",
+            "icon": "ClipboardList",
+            "is_app": true,
+            "path": "/invoice/template"
+        },
+        {
+            "name": "fieldConfig",
+            "display": "Field Configuration",
+            "icon": "Settings",
+            "is_app": true,
+            "path": "#"
+        },
+        {
+            "name": "validationRules",
+            "display": "Validation Rules",
+            "icon": "ShieldCheck",
+            "is_app": true,
+            "path": "#"
+        }
+    ]
+}

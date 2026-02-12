@@ -82,3 +82,25 @@ class InvoiceJson(db.Model):
         db.DateTime,
         default=datetime.utcnow
     )
+
+
+class OtmObjectMetadata(db.Model):
+    __tablename__ = "otm_object_metadata"
+
+    id = db.Column(db.Integer, primary_key=True)
+    object_name = db.Column(db.String(100), unique=True, nullable=False)
+    classification = db.Column(db.String(20), nullable=False)  # MASTER / TRANSACTION / POWER
+    last_synced = db.Column(db.DateTime, default=datetime.utcnow)
+
+    fields = db.relationship('MetadataField', backref='object_metadata', lazy=True, cascade="all, delete-orphan")
+
+
+class MetadataField(db.Model):
+    __tablename__ = "metadata_fields"
+
+    id = db.Column(db.Integer, primary_key=True)
+    metadata_id = db.Column(db.Integer, db.ForeignKey('otm_object_metadata.id'), nullable=False)
+    field_name = db.Column(db.String(100), nullable=False)
+    path = db.Column(db.String(255))
+    data_type = db.Column(db.String(50))
+    is_required = db.Column(db.Boolean, default=False)
