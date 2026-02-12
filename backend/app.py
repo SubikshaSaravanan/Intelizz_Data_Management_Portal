@@ -17,6 +17,9 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
 
+    # Disable alphabetical sorting of JSON keys to preserve OTM field order
+    app.json.sort_keys = False
+
     # =============================
     # Enable CORS
     # =============================

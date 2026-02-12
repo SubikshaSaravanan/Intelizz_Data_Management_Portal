@@ -138,5 +138,47 @@
         "mandatory": true
       }
     ]
+  },
+  {
+    "id": "4c81d162-3b43-4192-af8d-17bbe2171b97",
+    "name": "Test1",
+    "fields": [
+      {
+        "id": "invoiceGid",
+        "name": "Invoice Gid",
+        "displayText": "Invoice  Gid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": false
+      },
+      {
+        "id": "invoiceXid",
+        "name": "Invoice Xid",
+        "displayText": "Invoice  Xid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "servprovAliasQualGid",
+        "name": "Servprov Alias Qual Gid",
+        "displayText": "Servprov  Alias  Qual  Gid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": false
+      },
+      {
+        "id": "servprovAliasValue",
+        "name": "Servprov Alias Value",
+        "displayText": "Servprov  Alias  Value",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": false
+      }
+    ]
   }
 ]

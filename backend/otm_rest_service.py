@@ -95,3 +95,29 @@ def post_excel_json_invoice_to_otm(payload):
 
     return response.json()
 
+
+def get_otm_metadata(object_name):
+    """
+    Fetches raw metadata (field names, schema, structure) for an OTM object.
+    URL: /logisticsRestApi/resources-int/v2/metadata-catalog/{objectName}
+    """
+    url = f"{Config.OTM_REST_URL}/metadata-catalog/{object_name}"
+
+    headers = {
+        "Accept": "application/json"
+    }
+
+    response = requests.get(
+        url,
+        headers=headers,
+        auth=(
+            Config.OTM_USERNAME,
+            Config.OTM_PASSWORD
+        ),
+        timeout=60
+    )
+
+    if response.status_code != 200:
+        return response.status_code, {"error": f"Failed to fetch metadata for {object_name}", "raw": response.text}
+
+    return response.status_code, response.json()
