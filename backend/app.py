@@ -8,7 +8,7 @@ from config import Config
 from routes import bp
 
 from auth import auth_bp
-from invoice_config_routes import invoice_config_bp
+# from invoice_config_routes import invoice_config_bp
 from item_modules.item_routes import item_bp
 # from invoice_config_routes import invoice_config_bp
 from routes import bp
@@ -47,7 +47,7 @@ def create_app():
     # =============================
     app.register_blueprint(bp, url_prefix="/api")          # ✅ ONLY ONCE
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
-    app.register_blueprint(invoice_config_bp, url_prefix="/api/invoice-config")
+    # app.register_blueprint(invoice_config_bp, url_prefix="/api/invoice-config")
     app.register_blueprint(item_bp, url_prefix="/api/items")
 
 
