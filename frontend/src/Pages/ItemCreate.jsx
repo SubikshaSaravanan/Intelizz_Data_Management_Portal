@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  Search, ChevronDown, ChevronUp, Database, 
-  Calendar, Tag, Layers, Send, CheckCircle, AlertCircle, RotateCcw, Upload, Download 
+  Search, Database, Layers, CheckCircle, AlertCircle 
 } from 'lucide-react';
 
 const ItemCreate = () => {
@@ -12,31 +11,8 @@ const ItemCreate = () => {
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [status, setStatus] = useState({ type: null, message: "" });
-  const [createdGid, setCreatedGid] = useState(null);
 
-  // 1. Logic to Download the Excel Template from Backend
-  const handleExport = async () => {
-    try {
-      setStatus({ type: 'info', message: "Generating template..." });
-      const response = await axios.get('http://127.0.0.1:5000/api/items/export-template', {
-        responseType: 'blob', // Required for file downloads
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'OTM_UI_Template.xlsx');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      
-      setStatus({ type: 'success', message: "Template downloaded successfully!" });
-    } catch (err) {
-      setStatus({ type: 'error', message: "Failed to download template." });
-    }
-  };
-
-  // 2. Logic to initialize the form
+  // Initialize the form by fetching config
   const initForm = async () => {
     setLoading(true);
     try {
@@ -54,35 +30,15 @@ const ItemCreate = () => {
 
   useEffect(() => { initForm(); }, []);
 
-  // 3. Logic to upload the modified Excel
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-
-    try {
-      setLoading(true);
-      await axios.post('http://127.0.0.1:5000/api/items/upload-template', uploadData);
-      await initForm(); 
-      setStatus({ type: 'success', message: "UI Template updated from Excel!" });
-    } catch (err) {
-      setStatus({ type: 'error', message: "Excel upload failed." });
-    } finally { setLoading(false); }
-  };
-
   const handlePost = async () => {
     setSubmitting(true);
     try {
       const response = await axios.post('http://127.0.0.1:5000/api/items/', formData);
-      setCreatedGid(response.data.item_gid);
       setStatus({ type: 'success', message: `Success! GID: ${response.data.item_gid}` });
     } catch (err) {
       setStatus({ type: 'error', message: err.response?.data?.error || "Sync Failed." });
     } finally { setSubmitting(false); }
   };
-
 
   const renderSectionFields = (sectionId) => {
     return config
@@ -113,29 +69,16 @@ const ItemCreate = () => {
             <h1 className="text-lg font-bold tracking-tight text-slate-800">OTM Item Manager</h1>
           </div>
           
-
           <div className="flex items-center gap-3">
-            {/* Download Button */}
-            <button 
-              onClick={handleExport}
-              className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-semibold transition-all text-slate-700 shadow-sm"
-            >
-              <Download size={16} className="text-blue-500"/> Download List
-            </button>
-
-            {/* Upload Button */}
-            <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-semibold shadow-md">
-              <Upload size={16}/> Upload Template
-              <input type="file" className="hidden" onChange={handleFileUpload} accept=".xlsx, .xls" />
-            </label>
-
-            <div className="h-6 w-[1px] bg-slate-200 mx-2"></div>
-
-            <input 
-              type="text" placeholder="Filter UI fields..." 
-              className="h-10 w-40 rounded-full border border-slate-200 bg-slate-50 px-4 text-xs focus:w-64 transition-all outline-none"
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <div className="relative flex items-center">
+              <Search size={14} className="absolute left-3 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="Filter UI fields..." 
+                className="h-10 w-40 rounded-full border border-slate-200 bg-slate-50 pl-9 pr-4 text-xs focus:w-64 transition-all outline-none"
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
         </div>
       </nav>
@@ -144,7 +87,6 @@ const ItemCreate = () => {
         {status.message && (
           <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${
             status.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 
-            status.type === 'info' ? 'bg-blue-50 border-blue-200 text-blue-700' :
             'bg-red-50 border-red-200 text-red-700'
           }`}>
             {status.type === 'success' ? <CheckCircle size={18}/> : <AlertCircle size={18}/>}
