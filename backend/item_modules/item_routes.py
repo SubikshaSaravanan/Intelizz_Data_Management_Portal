@@ -9,41 +9,7 @@ from item_modules.item_service import (
 
 item_bp = Blueprint("item_bp", __name__)
 
-# --- 1. TEMPLATE LIBRARY MANAGEMENT ---
 
-@item_bp.route('/templates', methods=['GET'])
-def get_templates():
-    """Fetch all saved templates from the permanent library."""
-    try:
-        templates = Template.query.all()
-        return jsonify([{"name": t.name, "data": t.config_json} for t in templates]), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@item_bp.route('/templates', methods=['POST'])
-def save_template():
-    """Save or update a template in the permanent library."""
-    try:
-        data = request.get_json()
-        name = data.get('name')
-        config_data = data.get('data')
-
-        if not name or not config_data:
-            return jsonify({"error": "Missing template name or data"}), 400
-
-        # Update if exists, otherwise create new
-        template = Template.query.filter_by(name=name).first()
-        if template:
-            template.config_json = config_data
-        else:
-            template = Template(name=name, config_json=config_data)
-            db.session.add(template)
-        
-        db.session.commit()
-        return jsonify({"message": f"Template '{name}' saved to library!"}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"error": str(e)}), 500
 
 # --- 2. LIVE FIELD CONFIGURATION (UPDATE DB) ---
 
