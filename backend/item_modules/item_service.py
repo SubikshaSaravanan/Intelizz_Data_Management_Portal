@@ -4,9 +4,9 @@ import logging
 import urllib3
 from requests.auth import HTTPBasicAuth
 from flask import current_app
-from database import db
+from ..database import db
 from .item_model import Item
-from item_modules.item_model import FieldConfig
+from .item_model import FieldConfig
  
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
  

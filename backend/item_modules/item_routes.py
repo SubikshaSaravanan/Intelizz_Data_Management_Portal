@@ -1,7 +1,8 @@
 import json
 from flask import Blueprint, request, jsonify
-from item_modules.item_model import FieldConfig, db
-from item_modules.item_service import (
+from .item_model import FieldConfig
+from ..database import db
+from .item_service import (
     create_item,
     get_otm_item_metadata,
     list_items

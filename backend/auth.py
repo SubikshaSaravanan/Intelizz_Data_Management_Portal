@@ -1,10 +1,10 @@
 from flask import Blueprint, request, jsonify
-from models import User
-from database import db
+from .models import User
+from .database import db
 from werkzeug.security import check_password_hash
 import jwt
 import datetime
-from config import Config
+from .config import Config
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 

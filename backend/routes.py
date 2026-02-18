@@ -2,22 +2,25 @@ from flask import Blueprint, request, jsonify
 import pandas as pd
 import json
 
-from database import db
-from models import Invoice
+from .database import db
+from .models import Invoice, OtmObjectMetadata, MetadataField
 
-from xml_builder import build_invoice_xml
-from json_builder import build_invoice_json_from_excel
+from .xml_builder import build_invoice_xml
+from .json_builder import build_invoice_json_from_excel
 
-
-from otm_service import (
+from .otm_service import (
     post_to_otm,
     get_otm_status,
     get_transmission_error_report
 )
 
-from otm_rest_service import post_excel_json_invoice_to_otm, get_otm_metadata
-from models import Invoice, OtmObjectMetadata, MetadataField
-from invoice_template_routes import invoice_template_bp
+from .otm_rest_service import (
+    post_excel_json_invoice_to_otm,
+    get_otm_metadata
+)
+
+from .invoice_template_routes import invoice_template_bp
+
 
 bp = Blueprint("api", __name__)
 

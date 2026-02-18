@@ -1,5 +1,5 @@
 import requests
-from config import Config
+from .config import Config
 
 
 def post_invoice_json_to_otm(payload):

@@ -7,7 +7,7 @@ from sqlalchemy import (
     UniqueConstraint, Index, Boolean
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from database import db
+from ..database import db
 
 class Item(db.Model):
     __tablename__ = "items"
