@@ -1,7 +1,7 @@
 import json
-from app import create_app
-from database import db
-from models import OtmObjectMetadata
+from .app import create_app
+from .database import db
+from .models import OtmObjectMetadata, MetadataField
 
 app = create_app()
 

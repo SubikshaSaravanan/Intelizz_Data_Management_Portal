@@ -7,7 +7,7 @@ from sqlalchemy import (
     UniqueConstraint, Index, Boolean
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from database import db
+from ..database import db
 
 class Item(db.Model):
     __tablename__ = "items"
@@ -34,19 +34,19 @@ class Item(db.Model):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
 # --- TEMPLATE LIBRARY (Moved out of Item class) ---
-# class Template(db.Model):
-#     __tablename__ = "templates"
+class Template(db.Model):
+    __tablename__ = "templates"
 
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(100), unique=True, nullable=False)
-#     config_json = db.Column(db.JSON, nullable=False) # Stores the field array
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    config_json = db.Column(db.JSON, nullable=False) # Stores the field array
 
-#     def to_dict(self):
-#         return {
-#             "id": self.id,
-#             "name": self.name,
-#             "data": self.config_json
-#         }
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "data": self.config_json
+        }
 
 class FieldConfig(db.Model):
     """Controls the Item Field Mapping UI dynamically"""

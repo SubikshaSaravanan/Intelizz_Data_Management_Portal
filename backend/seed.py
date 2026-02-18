@@ -1,6 +1,6 @@
-from app import create_app
-from database import db
-from models import User
+from .app import create_app
+from .database import db
+from .models import User
 
 app = create_app()
 

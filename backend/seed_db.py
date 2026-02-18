@@ -1,7 +1,7 @@
 # backend/seed_db.py
-from app import app
-from database import db
-from item_modules.item_model import FieldConfig
+from .app import app
+from .database import db
+from .item_modules.item_model import FieldConfig
 
 def seed():
     with app.app_context():

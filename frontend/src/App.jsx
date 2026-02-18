@@ -6,14 +6,17 @@ import Landing from "./Pages/Landing";
 import Invoice from "./Pages/Invoice";
 import InvoiceJson from "./Pages/InvoiceJson";
 import InvoiceTemplate from "./Pages/InvoiceTemplate";
+import InvoiceJson from "./Pages/InvoiceJson";
+import InvoiceTemplate from "./Pages/InvoiceTemplate";
 import Items from "./Pages/ItemCreate";
+import Setting from "./Pages/FieldConfigManager";
+
 import Setting from "./Pages/FieldConfigManager";
 
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
-     
-export default function App() {
 
+export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("auth") === "true"
   );
@@ -29,19 +32,15 @@ export default function App() {
 
   return (
     <BrowserRouter>
-
       {/* NAVBAR */}
       {isLoggedIn && <Navbar />}
 
       <Routes>
-
         {/* ================= LOGIN ================= */}
         <Route
           path="/"
           element={
-            isLoggedIn
-              ? <Navigate to="/dashboard" />
-              : <Login />
+            isLoggedIn ? <Navigate to="/dashboard" /> : <Login />
           }
         />
 
@@ -74,42 +73,48 @@ export default function App() {
             </PrivateRoute>
           }
         />
-        <Route path="/invoice/template" element={<InvoiceTemplate />} />
+
+        {/* ================= INVOICE TEMPLATE ================= */}
+        <Route
+          path="/invoice/template"
+          element={
+            <PrivateRoute>
+              <InvoiceTemplate />
+            </PrivateRoute>
+          }
+        />
 
         {/* ================= ITEMS ================= */}
         <Route
-  path="/ItemCreate"
-  element={
-    <PrivateRoute>
-      <Items />
-    </PrivateRoute>
-  }
-/>
- {/* Items*/}
-        <Route
-  path="/FieldConfigManager"
-  element={
-    <PrivateRoute>
-      <Setting />
-    </PrivateRoute>
-  }
-/>
- {/* Settings*/}
-        <Route
-  path="/settings"
-  element={
-    <PrivateRoute>
-      <Setting />
-    </PrivateRoute>
-  }
-/>
-
-        {/* ================= FALLBACK ================= */}
-        <Route
-          path="*"
-          element={<Navigate to="/dashboard" />}
+          path="/ItemCreate"
+          element={
+            <PrivateRoute>
+              <Items />
+            </PrivateRoute>
+          }
         />
 
+        {/* ================= FIELD CONFIG / SETTINGS ================= */}
+        <Route
+          path="/FieldConfigManager"
+          element={
+            <PrivateRoute>
+              <Setting />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <Setting />
+            </PrivateRoute>
+          }
+        />
+
+        {/* ================= FALLBACK ================= */}
+        <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>
   );

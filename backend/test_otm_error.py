@@ -1,7 +1,7 @@
 import time
 import requests
 from lxml import etree
-from config import Config
+from .config import Config
 
 # ============================================================
 # NAMESPACES

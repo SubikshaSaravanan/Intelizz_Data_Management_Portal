@@ -9,8 +9,8 @@ from xml_builder import build_invoice_xml
 from otm_service import post_to_otm
 from otm_rest_service import post_excel_json_invoice_to_otm
 
-from models import Invoice
-from database import db
+from .models import Invoice
+from .database import db
 
 invoice_upload_routes = Blueprint("invoice_upload_routes", __name__)
 

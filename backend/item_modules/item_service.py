@@ -4,9 +4,9 @@ import logging
 import urllib3
 from requests.auth import HTTPBasicAuth
 from flask import current_app
-from database import db
+from ..database import db
 from .item_model import Item
-from item_modules.item_model import FieldConfig
+from .item_model import FieldConfig
  
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
  
@@ -32,7 +32,29 @@ def get_otm_item_metadata():
         )
  
         if response.status_code == 200:
-            return response.json()
+            data = response.json()
+            # Proactive sync: if FieldConfig is empty, populate it
+            try:
+                if FieldConfig.query.count() == 0:
+                    otm_fields = (data.get('components', {}).get('schemas', {})
+                                       .get('Item', {}).get('properties', {}))
+                    if otm_fields:
+                        for field_key in otm_fields.keys():
+                            if field_key in ['links', '_self']: continue
+                            new_cfg = FieldConfig(
+                                key=field_key,
+                                label=field_key.capitalize(),
+                                display=True,
+                                section="core"
+                            )
+                            db.session.add(new_cfg)
+                        db.session.commit()
+                        logging.info("Auto-synced field configurations from OTM metadata.")
+            except Exception as se:
+                logging.error(f"Auto-sync failed: {str(se)}")
+                db.session.rollback()
+
+            return data
  
         logging.error(f"OTM metadata fetch failed: {response.status_code}")
         return {}

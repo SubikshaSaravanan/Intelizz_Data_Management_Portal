@@ -1,8 +1,11 @@
+import os
+
 class Config:
 
     # ================= DATABASE =================
-    SQLALCHEMY_DATABASE_URI = (
-        "postgresql://postgres:12345@localhost:5432/otm_invoice"
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        "DATABASE_URL",
+        "postgresql://postgres:subi1234@localhost:5432/otm_invoice"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

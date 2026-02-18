@@ -1,8 +1,7 @@
-from app import create_app
-from models import OtmObjectMetadata, MetadataField
+from .app import app
+from .database import db
+from .models import OtmObjectMetadata, MetadataField
 import json
-
-app = create_app()
 
 def check_db():
     with app.app_context():

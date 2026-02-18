@@ -1,8 +1,8 @@
 import requests
 from flask import Blueprint, request, jsonify
-from config import Config
-from models import InvoiceJson
-from database import db
+from .config import Config
+from .models import InvoiceJson
+from .database import db
 import json
 
 invoice_json_routes = Blueprint("invoice_json_routes", __name__)

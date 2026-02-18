@@ -1,0 +1,82 @@
+[
+  {
+    "id": "c6b33444-5677-4ff4-8de8-72278ec33345",
+    "name": "Template1",
+    "fields": [
+      {
+        "id": "invoiceXid",
+        "name": "Invoice Xid",
+        "displayText": "Invoice_Xid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "invoiceNumber",
+        "name": "Invoice Number",
+        "displayText": "Invoice_Num",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "servprovAliasQualGid",
+        "name": "Servprov Alias Qual Gid",
+        "displayText": "Servprov  Alias  Qual  Gid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": false
+      },
+      {
+        "id": "servprovAliasValue",
+        "name": "Servprov Alias Value",
+        "displayText": "Servprov  Alias  Value",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "invoiceDate",
+        "name": "Invoice Date",
+        "displayText": "Invoice  Date",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "currencyGid",
+        "name": "Currency Gid",
+        "displayText": "Currency  Gid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "servprovGid",
+        "name": "Servprov Gid",
+        "displayText": "Servprov  Gid",
+        "defaultValue": "",
+        "type": "string",
+        "display": true,
+        "mandatory": true
+      },
+      {
+        "id": "refnums",
+        "name": "Refnums",
+        "displayText": "Refnums",
+        "defaultValue": [
+          ""
+        ],
+        "type": "array",
+        "display": true,
+        "mandatory": true
+      }
+    ]
+  }
+]
