@@ -57,10 +57,27 @@ export default function InvoiceTemplate() {
         );
 
         if (schemaKey) {
-          parsedFields = extractProperties(data.components.schemas[schemaKey]);
+          const schema = data.components.schemas[schemaKey];
+          parsedFields = extractProperties(schema);
+          // Mark as mandatory if in the 'required' array
+          if (Array.isArray(schema.required)) {
+            parsedFields = parsedFields.map(f => ({
+              ...f,
+              required: schema.required.includes(f.id) || f.required
+            }));
+          }
         } else {
           const firstKey = Object.keys(data.components.schemas)[0];
-          if (firstKey) parsedFields = extractProperties(data.components.schemas[firstKey]);
+          if (firstKey) {
+            const schema = data.components.schemas[firstKey];
+            parsedFields = extractProperties(schema);
+            if (Array.isArray(schema.required)) {
+              parsedFields = parsedFields.map(f => ({
+                ...f,
+                required: schema.required.includes(f.id) || f.required
+              }));
+            }
+          }
         }
       }
       // 2. Check for Swagger 2.0 structure (definitions)
@@ -69,10 +86,26 @@ export default function InvoiceTemplate() {
           k.toLowerCase() === 'invoices' || k.toLowerCase() === 'invoice'
         );
         if (schemaKey) {
-          parsedFields = extractProperties(data.definitions[schemaKey]);
+          const schema = data.definitions[schemaKey];
+          parsedFields = extractProperties(schema);
+          if (Array.isArray(schema.required)) {
+            parsedFields = parsedFields.map(f => ({
+              ...f,
+              required: schema.required.includes(f.id) || f.required
+            }));
+          }
         } else {
           const firstKey = Object.keys(data.definitions)[0];
-          if (firstKey) parsedFields = extractProperties(data.definitions[firstKey]);
+          if (firstKey) {
+            const schema = data.definitions[firstKey];
+            parsedFields = extractProperties(schema);
+            if (Array.isArray(schema.required)) {
+              parsedFields = parsedFields.map(f => ({
+                ...f,
+                required: schema.required.includes(f.id) || f.required
+              }));
+            }
+          }
         }
       }
       // 3. Fallback to existing logic
@@ -86,6 +119,12 @@ export default function InvoiceTemplate() {
           name: formatFieldName(key),
           ...data.properties[key]
         }));
+        if (Array.isArray(data.required)) {
+          parsedFields = parsedFields.map(f => ({
+            ...f,
+            required: data.required.includes(f.id) || f.required
+          }));
+        }
       } else {
         parsedFields = Object.keys(data).map(key => ({
           id: key,
@@ -101,29 +140,25 @@ export default function InvoiceTemplate() {
           !!field.items ||
           (field.properties && field.properties.items && (field.properties.items.type === 'array' || field.properties.items.items));
 
+        const isMandatory = field.required === true;
+
         return {
           id: field.id || field.name,
           name: field.name || field.id,
           displayText: field.title || formatFieldName(field.name || field.id),
           defaultValue: isArray ? [""] : "",
           type: isArray ? 'array' : (field.type || 'string'),
-          display: false,
-          mandatory: field.required || false,
-          disabled: false
+          display: isMandatory ? true : false,
+          mandatory: isMandatory,
+          isSourceMandatory: isMandatory, // Permanent flag from OTM
+          disabled: isMandatory
         };
       });
 
-      // Process: Set mandatory fields
-      const processedFields = initialFields.map(f => ({
-        ...f,
-        display: f.mandatory ? true : f.display,
-        disabled: f.mandatory
-      }));
-
-      setFields({ invoice: processedFields });
+      setFields({ invoice: initialFields });
 
       // Auto-expand all groups initially
-      const groups = getGroupedFields(processedFields);
+      const groups = getGroupedFields(initialFields);
       const allGroups = {};
       Object.keys(groups).forEach(g => allGroups[g] = true);
       setExpandedGroups(allGroups);
@@ -176,7 +211,11 @@ export default function InvoiceTemplate() {
     setFields(prev => ({
       invoice: prev.invoice.map(field => {
         if (field.id === id) {
-          // If we are toggling mandatory
+          // STRICT RULE: If field is OTM-mandatory, prevent toggling display or mandatory
+          if (field.isSourceMandatory && (key === "display" || key === "mandatory")) {
+            return field;
+          }
+
           if (key === "mandatory") {
             const newMandatory = !field.mandatory;
             return {
@@ -432,9 +471,16 @@ export default function InvoiceTemplate() {
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {groupedFields[groupName].map((field) => (
-                          <tr key={field.id} className={`hover:bg-slate-50/80 transition-colors ${field.mandatory ? 'opacity-60' : ''}`}>
+                          <tr key={field.id} className={`hover:bg-slate-50/80 transition-colors ${field.isSourceMandatory ? 'bg-slate-50/50' : ''}`}>
                             <td className="px-6 py-3">
-                              <div className="font-medium text-slate-700">{field.name}</div>
+                              <div className="flex items-center gap-2">
+                                <div className="font-medium text-slate-700">{field.name}</div>
+                                {field.isSourceMandatory && (
+                                  <span className="text-[9px] font-black bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded uppercase tracking-wider border border-rose-200 shadow-sm">
+                                    Required
+                                  </span>
+                                )}
+                              </div>
                               <div className="text-xs text-slate-400 font-mono mt-0.5">{field.id}</div>
                             </td>
                             <td className="px-6 py-3">
@@ -503,7 +549,8 @@ export default function InvoiceTemplate() {
                                   type="checkbox"
                                   checked={field.mandatory}
                                   onChange={() => handleToggle(field.id, "mandatory")}
-                                  className="w-5 h-5 rounded border-slate-300 text-rose-500 focus:ring-rose-500 transition-colors cursor-pointer"
+                                  disabled={field.isSourceMandatory}
+                                  className={`w-5 h-5 rounded border-slate-300 text-rose-500 focus:ring-rose-500 transition-colors cursor-pointer ${field.isSourceMandatory ? 'opacity-50 cursor-not-allowed bg-slate-100' : ''}`}
                                 />
                               </div>
                             </td>

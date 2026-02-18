@@ -11,14 +11,12 @@ import Setting from "./Pages/FieldConfigManager";
 
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
-     
-export default function App() {
 
+export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
     localStorage.getItem("auth") === "true"
   );
 
-  // Keep React in sync with localStorage
   useEffect(() => {
     const interval = setInterval(() => {
       setIsLoggedIn(localStorage.getItem("auth") === "true");
@@ -29,23 +27,16 @@ export default function App() {
 
   return (
     <BrowserRouter>
-
-      {/* NAVBAR */}
       {isLoggedIn && <Navbar />}
 
       <Routes>
-
-        {/* ================= LOGIN ================= */}
         <Route
           path="/"
           element={
-            isLoggedIn
-              ? <Navigate to="/dashboard" />
-              : <Login />
+            isLoggedIn ? <Navigate to="/dashboard" /> : <Login />
           }
         />
 
-        {/* ================= DASHBOARD ================= */}
         <Route
           path="/dashboard"
           element={
@@ -55,7 +46,6 @@ export default function App() {
           }
         />
 
-        {/* ================= EXCEL INVOICE ================= */}
         <Route
           path="/invoice"
           element={
@@ -65,7 +55,6 @@ export default function App() {
           }
         />
 
-        {/* ================= JSON INVOICE ================= */}
         <Route
           path="/invoice-json"
           element={
@@ -74,42 +63,44 @@ export default function App() {
             </PrivateRoute>
           }
         />
-        <Route path="/invoice/template" element={<InvoiceTemplate />} />
 
-        {/* ================= ITEMS ================= */}
         <Route
-  path="/ItemCreate"
-  element={
-    <PrivateRoute>
-      <Items />
-    </PrivateRoute>
-  }
-/>
- {/* Items*/}
-        <Route
-  path="/FieldConfigManager"
-  element={
-    <PrivateRoute>
-      <Setting />
-    </PrivateRoute>
-  }
-/>
- {/* Settings*/}
-        <Route
-  path="/settings"
-  element={
-    <PrivateRoute>
-      <Setting />
-    </PrivateRoute>
-  }
-/>
-
-        {/* ================= FALLBACK ================= */}
-        <Route
-          path="*"
-          element={<Navigate to="/dashboard" />}
+          path="/invoice/template"
+          element={
+            <PrivateRoute>
+              <InvoiceTemplate />
+            </PrivateRoute>
+          }
         />
 
+        <Route
+          path="/ItemCreate"
+          element={
+            <PrivateRoute>
+              <Items />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/FieldConfigManager"
+          element={
+            <PrivateRoute>
+              <Setting />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <Setting />
+            </PrivateRoute>
+          }
+        />
+
+        <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>
   );

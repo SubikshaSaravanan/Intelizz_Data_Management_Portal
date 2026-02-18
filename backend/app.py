@@ -19,12 +19,10 @@ def create_app():
  
     # =============================
     # Enable CORS
-    # =============================
     CORS(app)
  
     # =============================
     # Init DB & migrations
-    # =============================
     db.init_app(app)
     migrate.init_app(app, db)
  
