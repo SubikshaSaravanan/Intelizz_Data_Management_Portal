@@ -2,226 +2,213 @@ import requests
 import json
 import logging
 import urllib3
+import urllib.parse
+import uuid
+import pandas as pd
+from datetime import datetime
 from requests.auth import HTTPBasicAuth
 from flask import current_app
 from ..database import db
 from .item_model import Item
 from .item_model import FieldConfig
- 
+
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
- 
-# ======================================================
-# 1. FETCH OTM ITEM METADATA (Schema)
-# ======================================================
- 
+
+_OTM_METADATA_CACHE = None
+
 def get_otm_item_metadata():
+    global _OTM_METADATA_CACHE
+    if _OTM_METADATA_CACHE:
+        return _OTM_METADATA_CACHE
     try:
-        url = current_app.config["OTM_METADATA_URL"].rstrip("/")
+        url = current_app.config.get("OTM_METADATA_URL", "").rstrip("/")
+        if not url:
+            return {}
+            
         if "metadata-catalog" not in url:
             url = f"{url}/metadata-catalog/items"
- 
+
         response = requests.get(
             url,
-            auth=HTTPBasicAuth(
-                current_app.config["OTM_USERNAME"],
-                current_app.config["OTM_PASSWORD"]
-            ),
+            auth=HTTPBasicAuth(current_app.config["OTM_USERNAME"], current_app.config["OTM_PASSWORD"]),
             headers={"Accept": "application/json"},
             timeout=15,
             verify=False
         )
- 
         if response.status_code == 200:
             data = response.json()
-            # Proactive sync: if FieldConfig is empty, populate it
-            try:
-                if FieldConfig.query.count() == 0:
-                    otm_fields = (data.get('components', {}).get('schemas', {})
-                                       .get('Item', {}).get('properties', {}))
-                    if otm_fields:
-                        for field_key in otm_fields.keys():
-                            if field_key in ['links', '_self']: continue
-                            new_cfg = FieldConfig(
-                                key=field_key,
-                                label=field_key.capitalize(),
-                                display=True,
-                                section="core"
-                            )
-                            db.session.add(new_cfg)
-                        db.session.commit()
-                        logging.info("Auto-synced field configurations from OTM metadata.")
-            except Exception as se:
-                logging.error(f"Auto-sync failed: {str(se)}")
-                db.session.rollback()
-
+            _OTM_METADATA_CACHE = data
             return data
- 
-        logging.error(f"OTM metadata fetch failed: {response.status_code}")
         return {}
- 
     except Exception as e:
-        logging.error(f"OTM metadata exception: {str(e)}")
+        logging.error(f"Metadata fetch failed: {str(e)}")
         return {}
- 
-# ======================================================
-# 2. FILTER PAYLOAD USING OTM SCHEMA (CRITICAL)
-# ======================================================
- 
+
 def filter_otm_payload(payload):
     metadata = get_otm_item_metadata()
- 
-    valid_fields = (
-        metadata.get("components", {})
-        .get("schemas", {})
-        .get("Item", {})
-        .get("properties", {})
-        .keys()
-    )
- 
+    properties = (metadata.get("components", {}).get("schemas", {}).get("Item", {}).get("properties", {}))
+    valid_fields = properties.keys()
+
     if not valid_fields:
-        return payload  # fallback (do not block)
- 
-    return {k: v for k, v in payload.items() if k in valid_fields}
- 
-# ======================================================
-# 3. POST / UPSERT ITEM INTO OTM (ONLY RELIABLE WAY)
-# ======================================================
- 
+        return payload
+
+    always_allow = ["itemGid", "itemXid", "itemName", "domainName", "isActive", "isHazardous"]
+    return {k: v for k, v in payload.items() if k in valid_fields or k in always_allow}
+
 def post_to_otm(item_record):
-    raw_url = current_app.config["OTM_ITEM_URL"].rstrip("/")
-    base_url = raw_url.split("/items")[0]
-    url = f"{base_url}/items"
- 
+    raw_url = current_app.config.get("OTM_ITEM_URL", "").rstrip("/")
+    if not raw_url:
+        logging.error("OTM_ITEM_URL not configured")
+        return None
+        
+    url = raw_url if raw_url.endswith("/items") else f"{raw_url}/items"
+
     auth = HTTPBasicAuth(
-        current_app.config["OTM_USERNAME"],
+        current_app.config["OTM_USERNAME"], 
         current_app.config["OTM_PASSWORD"]
     )
- 
-    # ---- MINIMUM SAFE PAYLOAD ----
+
     otm_payload = {
         "itemGid": item_record.item_gid,
         "itemXid": item_record.item_xid,
         "itemName": item_record.item_name,
-        "domainName": item_record.domain_name,
- 
-        # VERY IMPORTANT DEFAULTS
-        "isActive": True,
-        "isHazardous": False
+        "domainName": item_record.domain_name
     }
- 
-    # ---- ADD EXTRA FIELDS (ONLY IF VALID) ----
+
     reserved = ["itemGid", "itemXid", "itemName", "domainName"]
-    for k, v in item_record.payload.items():
-        if k not in reserved and v not in ["", None, [], {}]:
-            otm_payload[k] = v
- 
-    # ---- FILTER AGAINST OTM SCHEMA ----
+    if item_record.payload:
+        for k, v in item_record.payload.items():
+            if k not in reserved and k not in ["isActive", "isHazardous"] and v not in ["", None, [], {}]:
+                otm_payload[k] = v
+
     otm_payload = filter_otm_payload(otm_payload)
- 
+
     try:
-        logging.info(f"Upserting item into OTM: {item_record.item_gid}")
- 
+        logging.info(f"Syncing to OTM: {item_record.item_gid}")
         response = requests.post(
             url,
             params={"upsert": "true"},
             json=otm_payload,
             auth=auth,
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            },
+            headers={"Content-Type": "application/json", "Accept": "application/json"},
             timeout=30,
             verify=False
         )
- 
         return response
- 
     except Exception as e:
-        logging.error(f"OTM sync fatal error: {str(e)}")
+        logging.error(f"OTM Connection Error: {str(e)}")
         return None
- 
-# ======================================================
-# 4. CREATE ITEM (LOCAL + OTM SYNC)
-# ======================================================
- 
+
+def bulk_create_items(file):
+    try:
+        # 1. Load Excel
+        df = pd.read_excel(file)
+        
+        # FIX 1: Replace all NaN (empty cells) with None globally.
+        # This prevents the "Token 'NaN' is invalid" error in PostgreSQL.
+        df = df.where(pd.notnull(df), None)
+        
+        results = []
+        for _, row in df.iterrows():
+            # Convert row to dict and remove None values to keep data clean
+            item_data = {k: v for k, v in row.to_dict().items() if v is not None}
+            
+            try:
+                # Reuse existing robust creation logic
+                new_item = create_item(item_data)
+                results.append({
+                    "itemXid": new_item.item_xid,
+                    "status": "SUCCESS",
+                    "otm_status": new_item.otm_sync_status
+                })
+            except Exception as e:
+                # FIX 2: Clear the "poisoned" transaction state.
+                # If one row fails, you MUST rollback so the next row can try again.
+                db.session.rollback()
+                
+                logging.error(f"Row failed: {item_data.get('itemXid')} - {str(e)}")
+                results.append({
+                    "itemXid": item_data.get("itemXid", "Unknown"),
+                    "status": "FAILED",
+                    "error": str(e)
+                })
+        return results
+    except Exception as e:
+        logging.error(f"Excel parsing failed: {str(e)}")
+        raise
+
 def create_item(data):
-    # ---- 1. UI MANDATORY FIELD VALIDATION ----
     configs = FieldConfig.query.filter_by(display=True).all()
     for cfg in configs:
         if cfg.mandatory and not data.get(cfg.key):
             raise ValueError(f"Field '{cfg.label or cfg.key}' is mandatory.")
- 
-    # ---- 2. DOMAIN & XID ----
+
     domain = (data.get("domainName") or "INTL").upper().strip()
+    
     xid = (data.get("itemXid") or "").upper().strip()
- 
     if not xid:
-        raise ValueError("itemXid is required.")
- 
+        timestamp = datetime.now().strftime("%Y%m%d")
+        random_suffix = uuid.uuid4().hex[:4].upper()
+        xid = f"ITEM_{timestamp}_{random_suffix}"
+        logging.info(f"No itemXid provided. Auto-generated: {xid}")
+
     item_gid = f"{domain}.{xid}"
- 
-    # ---- 3. NAME HANDLING ----
     item_name = data.get("itemName") or xid
- 
-    # ---- 4. UPSERT LOCAL DB ----
+
     item = Item.query.filter_by(item_gid=item_gid).first()
     if not item:
         item = Item(item_gid=item_gid)
         db.session.add(item)
- 
+
     item.item_xid = xid
     item.item_name = item_name
     item.domain_name = domain
     item.payload = data
     item.otm_sync_status = "PENDING"
- 
+    
     db.session.flush()
- 
-    # ---- 5. SYNC TO OTM ----
+
     response = post_to_otm(item)
- 
-    # ---- 6. VERIFY OTM PERSISTENCE (DO NOT TRUST STATUS) ----
+
     if response and response.status_code in [200, 201, 204]:
-        verify_url = (
-            current_app.config["OTM_ITEM_URL"].rstrip("/") +
-            f"/{item.item_gid}"
-        )
- 
-        verify = requests.get(
-            verify_url,
-            auth=HTTPBasicAuth(
-                current_app.config["OTM_USERNAME"],
-                current_app.config["OTM_PASSWORD"]
-            ),
-            headers={"Accept": "application/json"},
-            timeout=15,
-            verify=False
-        )
- 
-        if verify.status_code == 200:
-            item.otm_sync_status = "SUCCESS"
-        else:
+        safe_gid = urllib.parse.quote(item.item_gid)
+        base_url = current_app.config["OTM_ITEM_URL"].rstrip("/")
+        verify_base = base_url if base_url.endswith("/items") else f"{base_url}/items"
+        verify_url = f"{verify_base}/{safe_gid}"
+
+        try:
+            verify = requests.get(
+                verify_url,
+                auth=HTTPBasicAuth(current_app.config["OTM_USERNAME"], current_app.config["OTM_PASSWORD"]),
+                headers={"Accept": "application/json"},
+                timeout=15,
+                verify=False
+            )
+            
+            if verify.status_code == 200:
+                item.otm_sync_status = "SUCCESS"
+                logging.info(f"Sync Verified for {item.item_gid}")
+            else:
+                item.otm_sync_status = "FAILED"
+        except Exception as e:
             item.otm_sync_status = "FAILED"
-            logging.error("OTM accepted request but item not persisted")
- 
+            logging.error(f"Verification Step Failed: {str(e)}")
     else:
         item.otm_sync_status = "FAILED"
-        error = response.text if response else "OTM timeout"
-        logging.error(f"OTM sync failed: {error}")
- 
+        if response is not None:
+            logging.error(f"OTM Rejected Request ({response.status_code}): {response.text}")
+        else:
+            logging.error("OTM Sync Failed: No response from server.")
+
     db.session.commit()
     return item
- 
-# ======================================================
-# 5. HELPERS
-# ======================================================
- 
+
 def get_item(item_id):
     return Item.query.get_or_404(item_id)
- 
+
 def list_items(limit=50, offset=0):
     return Item.query.order_by(Item.id.desc()).offset(offset).limit(limit).all()
- 
+
 def delete_item(item_id):
     item = Item.query.get(item_id)
     if item:
@@ -229,28 +216,28 @@ def delete_item(item_id):
         db.session.commit()
         return True
     return False
- 
+
 def get_otm_reference_data(resource_path, field_name):
     try:
-        raw_url = current_app.config["OTM_METADATA_URL"].rstrip("/")
-        base_url = raw_url.split("/metadata-catalog")[0]
+        raw_url = current_app.config.get("OTM_METADATA_URL", "").rstrip("/")
+        if "/metadata-catalog" not in raw_url:
+             # Basic safety if the URL doesn't contain the expected string
+             base_url = raw_url 
+        else:
+             base_url = raw_url.split("/metadata-catalog")[0]
+             
         url = f"{base_url}/{resource_path}"
- 
         response = requests.get(
             url,
-            auth=HTTPBasicAuth(
-                current_app.config["OTM_USERNAME"],
-                current_app.config["OTM_PASSWORD"]
-            ),
+            auth=HTTPBasicAuth(current_app.config["OTM_USERNAME"], current_app.config["OTM_PASSWORD"]),
             params={"limit": 100},
             timeout=15,
             verify=False
         )
- 
         if response.status_code == 200:
-            return [i.get(field_name) for i in response.json().get("items", [])]
- 
+            data = response.json()
+            return [i.get(field_name) for i in data.get("items", []) if i.get(field_name)]
         return []
- 
-    except Exception:
+    except Exception as e:
+        logging.error(f"Reference data fetch failed: {str(e)}")
         return []

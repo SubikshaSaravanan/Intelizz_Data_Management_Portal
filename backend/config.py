@@ -21,7 +21,7 @@ class Config:
     )
  
     OTM_ITEM_URL = (
-        "https://otmgtm-test-hipro.otmgtm.us-phoenix-1.ocs.oraclecloud.com/logisticsRestApi/resources/v2/items"
+        "https://otmgtm-test-hipro.otmgtm.us-phoenix-1.ocs.oraclecloud.com/logisticsRestApi/resources-int/v2/items"
     )
  
     OTM_DBXML_URL = (
@@ -32,7 +32,7 @@ class Config:
     # ================= OTM REST =================
     OTM_REST_URL = (
         "https://otmgtm-test-hipro.otmgtm.us-phoenix-1.ocs.oraclecloud.com"
-        "/logisticsRestApi/resources-int/v2/metadata-catalog/items"
+        "/logisticsRestApi/resources-int/v2"
     )
  
     OTM_INVOICE_METADATA_URL = (

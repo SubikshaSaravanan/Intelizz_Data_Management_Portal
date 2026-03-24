@@ -1,181 +1,172 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
+import BulkUpload from "../components/BulkUpload";
 import {
-  Search, ChevronDown, ChevronUp, Database,
-  Calendar, Tag, Layers, Send, CheckCircle, AlertCircle, RotateCcw, Upload, Download
+  Database, Download, CheckCircle, Info, ChevronDown, SendHorizontal, Loader2, FileText, X, Trash2
 } from 'lucide-react';
 
 const ItemCreate = () => {
-  const [config, setConfig] = useState([]);
-  const [formData, setFormData] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const [status, setStatus] = useState({ type: null, message: "" });
-  const [createdGid, setCreatedGid] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const [pushing, setPushing] = useState(false);
+  
+  const [fileHistory, setFileHistory] = useState([]); 
+  const [activeFile, setActiveFile] = useState(null);
 
-  // 1. Logic to Download the Excel Template from Backend
   const handleExport = async () => {
+    setDownloading(true);
     try {
-      setStatus({ type: 'info', message: "Generating template..." });
-      const response = await axios.get('/api/items/export-template', {
-        responseType: 'blob', // Required for file downloads
+      setStatus({ type: 'info', message: "Generating unique template..." });
+      const response = await axios.get('http://127.0.0.1:5000/api/items/export-template', { 
+        responseType: 'blob' 
       });
+
+      // Unique filename with seconds
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const fileName = `OTM_Template_${timestamp}.xlsx`;
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'Item_UI_Template.xlsx');
+      link.setAttribute('download', fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();
+      window.URL.revokeObjectURL(url);
 
-      setStatus({ type: 'success', message: "Template downloaded successfully!" });
+      setStatus({ type: 'success', message: `Template downloaded: ${fileName}` });
     } catch (err) {
-      setStatus({ type: 'error', message: "Failed to download template." });
+      setStatus({ type: 'error', message: "Failed to generate template." });
+    } finally {
+      setDownloading(false);
     }
   };
 
-  // 2. Logic to initialize the form
-  const initForm = async () => {
-    setLoading(true);
+  const handleDropdownChange = (e) => {
+    const selectedName = e.target.value;
+    if (!selectedName) {
+        setActiveFile(null);
+        return;
+    }
+    const fileMatch = fileHistory.find(f => f.name === selectedName);
+    if (fileMatch) {
+      setActiveFile(fileMatch);
+    }
+  };
+
+  // NEW: Logic to remove a single file
+  const handleRemoveFile = () => {
+    if (!activeFile) return;
+    
+    const fileNameToRemove = activeFile.name;
+    setFileHistory(prev => prev.filter(f => f.name !== fileNameToRemove));
+    setActiveFile(null);
+    setStatus({ type: 'info', message: `Removed ${fileNameToRemove} from history.` });
+  };
+
+  const handlePushToOTM = async () => {
+    if (!activeFile) return;
+    setPushing(true);
+    const formData = new FormData();
+    formData.append('file', activeFile); 
+
     try {
-      const configRes = await axios.get('/api/items/config');
-      const activeConfigs = configRes.data.filter(c => c.display);
-      setConfig(activeConfigs);
-
-      const initial = {};
-      activeConfigs.forEach(c => { initial[c.key] = ''; });
-      setFormData(initial);
-    } catch (err) {
-      setStatus({ type: 'error', message: "Failed to load template settings." });
-    } finally { setLoading(false); }
+      setStatus({ type: 'info', message: `Syncing ${activeFile.name}...` });
+      const response = await axios.post('http://127.0.0.1:5000/api/items/bulk-upload', formData);
+      const { summary } = response.data;
+      setStatus({ 
+        type: 'success', 
+        message: `Sync Done! Success: ${summary.success}, Failed: ${summary.failed}` 
+      });
+    } catch (error) {
+      setStatus({ type: 'error', message: "Sync failed." });
+    } finally {
+      setPushing(false);
+    }
   };
-
-  useEffect(() => { initForm(); }, []);
-
-  // 3. Logic to upload the modified Excel
-  const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-
-    try {
-      setLoading(true);
-      await axios.post('/api/items/upload-template', uploadData);
-      await initForm();
-      setStatus({ type: 'success', message: "UI Template updated from Excel!" });
-    } catch (err) {
-      setStatus({ type: 'error', message: "Excel upload failed." });
-    } finally { setLoading(false); }
-  };
-
-  const handlePost = async () => {
-    setSubmitting(true);
-    try {
-      const response = await axios.post('/api/items/', formData);
-      setCreatedGid(response.data.item_gid);
-      setStatus({ type: 'success', message: `Success! GID: ${response.data.item_gid}` });
-    } catch (err) {
-      setStatus({ type: 'error', message: err.response?.data?.error || "Sync Failed." });
-    } finally { setSubmitting(false); }
-  };
-
-  const renderSectionFields = (sectionId) => {
-    const sectionFields = config.filter(c => (c.section || 'core').toLowerCase() === sectionId.toLowerCase());
-
-    return sectionFields
-      .filter(c => !searchTerm || c.label.toLowerCase().includes(searchTerm.toLowerCase()))
-      .map(field => (
-        <div key={field.key} className="flex flex-col gap-1.5">
-          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            {field.label} {field.mandatory && <span className="text-red-400">*</span>}
-          </label>
-          <input
-            className="h-10 border border-slate-200 rounded-xl px-4 text-sm bg-slate-50/30 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
-            value={formData[field.key] || ''}
-            placeholder={field.defaultValue || ''}
-            onChange={(e) => setFormData({ ...formData, [field.key]: e.target.value })}
-          />
-        </div>
-      ));
-  };
-
-  if (loading) return <div className="flex h-screen items-center justify-center font-bold text-blue-600 italic">Loading dynamic template...</div>;
-
-  const availableSections = [...new Set(config.map(c => (c.section || 'core').toLowerCase()))];
-  const displaySections = availableSections.length > 0 ? availableSections : ['core'];
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-32">
+    <div className="min-h-screen bg-[#F8FAFC] pb-20">
       <nav className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md px-6 py-4">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <div className="mx-auto flex max-w-6xl items-center justify-between">
           <div className="flex items-center gap-3">
-            <Database className="text-blue-600" />
-            <h1 className="text-lg font-bold tracking-tight text-slate-800">OTM Item Manager</h1>
+            <div className="bg-blue-600 p-2 rounded-lg text-white"><Database size={20} /></div>
+            <h1 className="text-lg font-bold text-slate-800">OTM Bulk Manager</h1>
           </div>
 
-
           <div className="flex items-center gap-3">
-            {/* Download Button */}
-            <button
-              onClick={handleExport}
-              className="flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-semibold transition-all text-slate-700 shadow-sm"
-            >
-              <Download size={16} className="text-blue-500" /> Download List
+            <button onClick={handleExport} disabled={downloading} className="bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold transition-all">
+              <Download size={16} className="inline mr-2" /> Template
             </button>
-
-            {/* Upload Button */}
-            <label className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer transition-all text-sm font-semibold shadow-md">
-              <Upload size={16} /> Upload Template
-              <input type="file" className="hidden" onChange={handleFileUpload} accept=".xlsx, .xls" />
-            </label>
-
-            <div className="h-6 w-[1px] bg-slate-200 mx-2"></div>
-
-            <input
-              type="text" placeholder="Filter UI fields..."
-              className="h-10 w-40 rounded-full border border-slate-200 bg-slate-50 px-4 text-xs focus:w-64 transition-all outline-none"
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+            <BulkUpload onFileSelected={(file) => {
+                setActiveFile(file);
+                setFileHistory(prev => [file, ...prev.filter(f => f.name !== file.name)]);
+            }} />
+            {activeFile && (
+              <button onClick={handlePushToOTM} disabled={pushing} className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-lg animate-in zoom-in">
+                {pushing ? <Loader2 size={16} className="animate-spin" /> : <SendHorizontal size={16} className="inline mr-2" />}
+                Push to OTM
+              </button>
+            )}
           </div>
         </div>
       </nav>
 
-      <main className="mx-auto mt-8 max-w-5xl px-6">
+      <main className="mx-auto mt-12 max-w-5xl px-6">
         {status.message && (
-          <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${status.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' :
-              status.type === 'info' ? 'bg-blue-50 border-blue-200 text-blue-700' :
-                'bg-red-50 border-red-200 text-red-700'
-            }`}>
-            {status.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-            <span className="text-sm font-medium">{status.message}</span>
+          <div className="mb-8 p-4 rounded-2xl border flex items-center justify-between bg-blue-50 border-blue-200 text-blue-700">
+            <span className="text-sm font-semibold">{status.message}</span>
+            <X size={18} className="cursor-pointer" onClick={() => setStatus({message: ""})} />
           </div>
         )}
 
-        {displaySections.map(sectionId => (
-          <div key={sectionId} className="mb-6 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-2 uppercase text-[10px] font-black tracking-[0.2em] text-slate-400">
-                <Layers size={14} className="text-blue-400" /> {sectionId} Group
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="md:col-span-1">
+            <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">File History</h3>
+              
+              <div className="flex flex-col gap-2">
+                <div className="relative flex-1">
+                  <select 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 appearance-none focus:outline-none"
+                    value={activeFile?.name || ""}
+                    onChange={handleDropdownChange}
+                  >
+                    <option value="">-- History --</option>
+                    {fileHistory.map((file, index) => (
+                      <option key={index} value={file.name}>{file.name}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-3 pointer-events-none text-slate-400"><ChevronDown size={14} /></div>
+                </div>
+
+                {/* The "Remove This" Button */}
+                {activeFile && (
+                    <button 
+                        onClick={handleRemoveFile}
+                        className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-[10px] font-bold text-red-500 bg-red-50 hover:bg-red-100 transition-colors border border-red-100"
+                    >
+                        <Trash2 size={12} /> Remove Selected
+                    </button>
+                )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 p-8">
-              {renderSectionFields(sectionId)}
+          </div>
+
+          <div className="md:col-span-3">
+            <div className="bg-blue-600 rounded-[32px] p-10 text-white shadow-xl">
+              <h2 className="text-2xl font-bold mb-4 italic">Synchronization Hub</h2>
+              <div className="bg-white/10 rounded-2xl p-6 border border-white/10">
+                <p className="text-[10px] uppercase font-bold text-blue-200 mb-1">Active File Details</p>
+                <div className="flex items-center gap-3">
+                    <FileText size={24} className="text-blue-300" />
+                    <p className="text-lg font-bold truncate">
+                        {activeFile ? activeFile.name : 'Waiting for selection...'}
+                    </p>
+                </div>
+              </div>
             </div>
           </div>
-        ))}
-
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-xs px-4">
-          <button
-            onClick={handlePost}
-            disabled={submitting}
-            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-bold shadow-2xl hover:bg-black transition-all disabled:bg-slate-300 transform active:scale-95"
-          >
-            {submitting ? "Processing Sync..." : "Push to Oracle OTM"}
-          </button>
         </div>
       </main>
     </div>
