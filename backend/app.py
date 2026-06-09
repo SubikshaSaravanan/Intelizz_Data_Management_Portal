@@ -8,7 +8,8 @@ from .config import Config
 from .routes import bp
 from .auth import auth_bp
 from .item_modules.item_routes import item_bp
- 
+from .OrderBase_modules.order_base_routes import order_bp
+from .OrderRelease_modules.order_release_routes import order_release_bp
  
 def create_app():
     app = Flask(__name__)
@@ -32,7 +33,8 @@ def create_app():
     app.register_blueprint(bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
     app.register_blueprint(item_bp, url_prefix="/api/items")
- 
+    app.register_blueprint(order_bp, url_prefix="/api/orderbase")
+    app.register_blueprint(order_release_bp, url_prefix="/api/order-release")
     return app
  
  
@@ -52,4 +54,4 @@ with app.app_context():
     print("=" * 50 + "\n")
  
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, use_reloader=False, port=5000)

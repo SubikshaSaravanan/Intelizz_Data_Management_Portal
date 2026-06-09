@@ -8,9 +8,15 @@ import InvoiceJson from "./Pages/InvoiceJson";
 import InvoiceTemplate from "./Pages/InvoiceTemplate";
 import Items from "./Pages/ItemCreate";
 import Setting from "./Pages/FieldConfigManager";
+import OrderBaseManager from './Pages/OrderBaseManager';
+import OrderBase from "./Pages/Orderbase";
+import OrderReleaseManager from "./Pages/OrderReleaseManager";
+import OrderReleaseWorkspace from "./Pages/OrderReleaseWorkspace";
+
 
 import Navbar from "./components/Navbar";
 import PrivateRoute from "./components/PrivateRoute";
+import OrderRelease from "./Pages/OrderReleaseWorkspace";
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(
@@ -99,6 +105,39 @@ export default function App() {
             </PrivateRoute>
           }
         />
+        <Route
+          path="/orders"
+          element={
+            <PrivateRoute>
+              <OrderBaseManager />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/OrderBase"
+          element={
+            <PrivateRoute>
+              <OrderBase />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/OrderReleaseWorkspace"
+          element={
+            <PrivateRoute>
+              <OrderReleaseWorkspace />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/OrderReleaseManager"
+          element={
+            <PrivateRoute>
+              <OrderReleaseManager />
+            </PrivateRoute>
+          }
+        />
+
 
         <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>

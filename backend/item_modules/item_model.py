@@ -19,9 +19,9 @@ class Item(db.Model):
     )
 
     id = Column(Integer, primary_key=True)
-    payload = Column(JSONB, nullable=False) # Stores dynamic UI fields
+    # This stores all your 'itemShipUnit.weight' etc. from Excel
+    payload = Column(JSONB, nullable=False) 
 
-    # Searchable core fields formatted for OTM
     item_gid = Column(String(255), nullable=False, index=True)
     item_xid = Column(String(255), nullable=False, index=True)
     item_name = Column(String(255), index=True)
@@ -29,36 +29,25 @@ class Item(db.Model):
 
     otm_sync_status = Column(String(20), nullable=False, default="PENDING")
     otm_error = Column(JSONB)
+    
+    # NEW: Track how many times we tried to push to OTM
+    sync_attempts = Column(Integer, default=0) 
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-    
-# --- TEMPLATE LIBRARY (Moved out of Item class) ---
-class Template(db.Model):
-    __tablename__ = "templates"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    config_json = db.Column(db.JSON, nullable=False) # Stores the field array
-
-    def to_dict(self):
-        return {
-            "id": self.id,
-            "name": self.name,
-            "data": self.config_json
-        }
 
 class FieldConfig(db.Model):
     """Controls the Item Field Mapping UI dynamically"""
     __tablename__ = "field_configs"
 
     id = Column(Integer, primary_key=True)
-    key = Column(String(100), unique=True, nullable=False) 
-    label = Column(String(100), nullable=False)
-    display = Column(Boolean, default=True) # Ensure Boolean is imported
+    # INCREASE TO 255 to support deep OTM child resource paths
+    key = Column(String(255), unique=True, nullable=False) 
+    label = Column(String(255), nullable=False)
+    display = Column(Boolean, default=True)
     disabled = Column(Boolean, default=False)
     mandatory = Column(Boolean, default=False)
-    default_value = Column(String(255), nullable=True) # New Column
+    default_value = Column(String(255), nullable=True) 
     section = Column(String(50), default="core")
 
     def to_dict(self):

@@ -33,7 +33,7 @@ export default function Navbar() {
     { name: "Location", path: "/location", icon: <MapPin size={18} /> },
     { name: "Tracking", path: "/tracking", icon: <Activity size={18} /> },
     { name: "Orders", path: "/orders", icon: <ClipboardList size={18} /> },
-    { name: "Audit", path: "/audit", icon: <Clock size={18} /> },
+    { name: "Order Release", path: "/OrderReleaseManager", icon: <Clock size={18} /> },
     { name: "itemCreate", path: "/ItemCreate", icon: <Package size={18} /> },
     { name: "Settings", path: "/settings", icon: <Settings size={18} /> }
   ];
